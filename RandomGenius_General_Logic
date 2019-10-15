@@ -1,0 +1,103 @@
+class PageInfo
+    {
+        //this is the page that gets the question and the answer, and three random info for the 
+        //other wrong answers
+
+        //this is the layout now:
+        //1) what/who is {wikipedia article title}?
+        //then a to d options, with descriptions of them, being only one right. There is no interaction with
+        //the buttons by now 
+
+        //Actual Code
+
+        bool result = false;
+        public int qN = 1;
+        public string tittle;
+        
+        //the last aswer will be the right one
+        public String[] answers = new String[4];
+
+        private string pageInfo;
+
+        public PageInfo()
+        {
+            Reset();
+        }
+      
+        //Makes all Answers = 404
+        public void Reset()
+        {
+            for (int i = 0; i < answers.Length; i++) { answers[i] = "404"; };
+        }
+
+        public void GetQuestion()
+        { 
+            {
+                var webClient = new WebClient();
+
+                for (int i = 0; i < 4; i++)
+                {
+                    //for every question, there will be a random article, with some exeptions
+                    while (answers[i] == "404" || answers[i].IndexOf("list") > -1)
+                    {
+                        tittle = setupTitle(getRandomArticle(webClient));
+                        answers[i] = setupDescription(pageInfo, webClient);
+                        Console.WriteLine(answers[i]);
+                    }
+
+                }
+            }
+        }
+
+        private string getRandomArticle(WebClient webClient)
+        {
+            string text = webClient.DownloadString("https://en.wikipedia.org/wiki/Special:Random");
+            return text;
+        }
+
+        //gets the answers, using the information page on wikipedia
+        public string setupDescription(string pageInfo, WebClient webClient)
+        {
+            var pageInfoDownload = webClient.DownloadString(pageInfo);
+
+            Match descriptionMatch = Regex.Match(pageInfoDownload, @"Central description</td>\s*(.+?)\s*</td>");
+
+            string description = descriptionMatch.Value;
+
+            description = description.Replace("Central description</td><td>", "");
+            description = description.Replace("</td>", "");
+
+            //Console.WriteLine(description);
+            if (description.Length > 0)
+            {
+                result = true;
+            }
+            else
+            {
+                Console.WriteLine("Fricl");
+                description = "404";
+            }
+            return description;
+        }
+
+        //gets the question, that right now is just the tittle and a "?"
+        public string setupTitle(string webClientDownload)
+        {
+            int end = webClientDownload.IndexOf(" - Wikipedia</title>");
+            int beggining = webClientDownload.IndexOf("<title>") + 7;
+            int titleSize = end - beggining;
+            
+            string wordTitle = webClientDownload.Substring(beggining, titleSize);
+
+            pageInfo = $"https://en.wikipedia.org/w/index.php?title={wordTitle}&action=info";
+
+            int titleSizeFont = titleSize;
+            if (titleSizeFont < 20) { titleSizeFont = 20; } else { titleSizeFont = titleSizeFont / 2; }
+
+            //Console.WriteLine("End: " + end.ToString());
+            //Console.WriteLine("Beggining: " + beggining.ToString());
+
+            return wordTitle;
+        }
+    }
+}
